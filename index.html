@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baldwin County Development Tracker</title>
+<link rel="stylesheet" href="lib/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div>
+      <div class="eyebrow">Baldwin County, Alabama · 2015–2026</div>
+      <h1>Development &amp; the Watersheds of Mobile Bay</h1>
+    </div>
+    <nav>
+      <a href="#growth">Growth</a><a href="#people">Who's moving in</a><a href="#map-sec">Map</a>
+      <a href="#watersheds">Watersheds</a><a href="#accountability">Accountability</a><a href="#outlook">Outlook</a><a href="#sources">Sources</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="kpis" id="kpis"></section>
+  <div class="leads card" id="leads"><h3>Story leads from the data</h3><ul></ul>
+    <p class="lead-src">These are this dashboard's calculations. Credit them as <i>“[Outlet] analysis of …”</i> naming the agency behind each figure: Census (population, permits), IRS (migration, ZIPs), EPA/ADEM (sites, fines), USGS (watersheds). <a href="#sources">How to attribute ↓</a></p></div>
+
+  <section id="growth">
+    <h2>Where the county is growing</h2>
+    <p class="dek">New housing units authorized by building permits, and population, 2015–2025. Commercial construction is tracked through state construction-stormwater permits (see the map and watershed sections).</p>
+    <div class="grid2">
+      <figure class="card"><figcaption><b>New housing units permitted, countywide</b><span>Census Building Permits Survey · 2026 is Jan–Sep only</span><span class="src-link">Source: <a href="#src-bps">Census permits</a></span></figcaption>
+        <div class="legend" id="lg-permits"></div><div class="chart"><canvas id="c-permits"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Population growth by ZIP code, 2014 → 2023</b><span>IRS: people on tax returns filed from each ZIP</span><span class="src-link">Source: <a href="#src-irs-zip">IRS ZIP data</a></span></figcaption>
+        <div class="chart tall"><canvas id="c-zips"></canvas></div></figure>
+    </div>
+    <figure class="card"><figcaption><b>Housing units permitted by city, per year</b><span>Darker = more units. Click a column header to sort. Population: Census estimates (2020 re-benchmark creates a jump in some towns).</span>
+      <button class="btn" data-csv="t-cities">Download CSV</button><span class="src-link">Source: <a href="#src-bps">Census permits</a> · <a href="#src-pep">Census population</a></span></figcaption>
+      <div class="table-wrap"><table id="t-cities" class="heat"></table></div></figure>
+  </section>
+
+  <section id="people">
+    <h2>Who is coming — and from where</h2>
+    <p class="dek">IRS migration data tracks households whose tax-return address moved into or out of Baldwin County between filing years. It is the most reliable public measure of who is relocating.</p>
+    <div class="grid2">
+      <figure class="card"><figcaption><b>People moving in vs. moving out, per year</b><span>IRS SOI county-to-county migration</span><span class="src-link">Source: <a href="#src-irs-mig">IRS migration</a></span></figcaption>
+        <div class="legend" id="lg-mig"></div><div class="chart"><canvas id="c-mig"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Average household income: newcomers vs. people who stayed</b><span>Adjusted gross income per tax return</span><span class="src-link">Source: <a href="#src-irs-mig">IRS migration</a></span></figcaption>
+        <div class="legend" id="lg-inc"></div><div class="chart"><canvas id="c-inc"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Top places new residents came from</b><span>Total people, 2015–2023 filing years combined</span><span class="src-link">Source: <a href="#src-irs-mig">IRS migration</a></span></figcaption>
+        <div class="chart tall"><canvas id="c-origins"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Movers by origin state</b><span>Total people, 2015–2023 combined · Alabama excludes Baldwin itself</span><span class="src-link">Source: <a href="#src-irs-mig">IRS migration</a></span></figcaption>
+        <div class="chart tall"><canvas id="c-states"></canvas></div></figure>
+    </div>
+  </section>
+
+  <section id="map-sec">
+    <h2>Map: construction, watersheds and impaired waters</h2>
+    <p class="dek">Each dot is a construction site that got state stormwater coverage (required for disturbing 1+ acre). Dark rings mark sites that regulators cited; ▲ marks sites that were fined. Red lines are waters the state lists as impaired. <span class="src-link inline">Source: <a href="#src-echo">EPA ECHO / ADEM</a> · <a href="#src-attains">EPA ATTAINS</a> · <a href="#src-wbd">USGS watersheds</a> · <a href="#src-irs-zip">IRS ZIP data</a></span></p>
+    <div class="filters card">
+      <label>Shade areas by
+        <select id="f-shade">
+          <option value="ws-density">Watershed: construction sites per 100 km²</option>
+          <option value="ws-cited">Watershed: sites cited by regulators</option>
+          <option value="zip-growth">ZIP: population growth 2014–2023</option>
+          <option value="none">No shading</option>
+        </select></label>
+      <label>Site start year <select id="f-from"></select> to <select id="f-to"></select></label>
+      <label>Type <select id="f-cat">
+          <option value="all">All construction</option><option>Residential</option><option>Commercial</option><option value="other">Roads, utilities &amp; other</option>
+        </select></label>
+      <label class="chk"><input type="checkbox" id="f-active"> Active sites only</label>
+      <label class="chk"><input type="checkbox" id="f-cited"> Cited / fined only</label>
+      <label class="chk"><input type="checkbox" id="f-waters" checked> Impaired waters</label>
+      <span class="count" id="f-count"></span>
+    </div>
+    <div class="map-layout">
+      <div id="map" class="card"></div>
+      <aside class="card" id="map-legend"></aside>
+    </div>
+  </section>
+
+  <section id="watersheds">
+    <h2>Watersheds feeding Mobile Bay &amp; Perdido Bay</h2>
+    <p class="dek">Construction activity, enforcement and water quality rolled up by HUC-12 watershed (USGS). Click a row to zoom the map.</p>
+    <div class="grid2">
+      <figure class="card"><figcaption><b>New construction-stormwater sites per year, by bay system</b><span>ADEM permits via EPA ECHO · 2026 is Jan–Oct · start years partly estimated; 2015–16 look undercounted in ECHO (see Sources)</span><span class="src-link">Source: <a href="#src-echo">EPA ECHO / ADEM</a> · <a href="#src-wbd">USGS watersheds</a></span></figcaption>
+        <div class="legend" id="lg-sys"></div><div class="chart"><canvas id="c-sys"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Why the waters are listed as impaired</b><span>Causes on assessed waters in Baldwin watersheds (EPA ATTAINS, 2024 cycle)</span><span class="src-link">Source: <a href="#src-attains">EPA ATTAINS</a></span></figcaption>
+        <div class="chart"><canvas id="c-causes"></canvas></div></figure>
+    </div>
+    <figure class="card"><figcaption><b>Watershed scorecard</b><span>Sorted by total construction sites · click headers to sort</span>
+      <button class="btn" data-csv="t-ws">Download CSV</button><span class="src-link">Source: <a href="#src-wbd">USGS watersheds</a> · <a href="#src-echo">EPA ECHO / ADEM</a> · <a href="#src-attains">EPA ATTAINS</a></span></figcaption>
+      <div class="table-wrap"><table id="t-ws"></table></div></figure>
+  </section>
+
+  <section id="accountability">
+    <h2>Accountability: who's been cited or fined</h2>
+    <p class="dek">Enforcement recorded by ADEM/EPA under the Clean Water Act. <b>Informal actions</b> are notices of violation and warning letters; <b>formal actions</b> are administrative orders, usually with penalties. ECHO reports these for roughly the last 5 years. Each row links to the federal record.</p>
+    <figure class="card"><figcaption><b>Developers &amp; contractors by enforcement record</b><span>Permit operator names, lightly normalized (LLC/Inc. merged). Related LLCs are not yet linked.</span>
+      <input type="search" id="q-ops" placeholder="Search operator…"><button class="btn" data-csv="t-ops">Download CSV</button><span class="src-link">Source: <a href="#src-echo">EPA ECHO / ADEM</a></span></figcaption>
+      <div class="table-wrap short"><table id="t-ops"></table></div></figure>
+    <figure class="card"><figcaption><b>Every cited or fined site</b><span>Includes construction sites, unpermitted discharges and wastewater plants</span>
+      <input type="search" id="q-sites" placeholder="Search site, operator, city…"><button class="btn" data-csv="t-sites">Download CSV</button><span class="src-link">Source: <a href="#src-echo">EPA ECHO / ADEM</a></span></figcaption>
+      <div class="table-wrap short"><table id="t-sites"></table></div></figure>
+  </section>
+
+  <section id="outlook">
+    <h2>Outlook</h2>
+    <p class="dek">What's in the pipeline now, and where current trends point. Projections simply extend the 2020–2025 growth rate; they are not official forecasts.</p>
+    <div class="grid2">
+      <figure class="card"><figcaption><b>County population, with projection to 2030</b><span>Census estimates; dashed = 2020–25 pace continued</span><span class="src-link">Source: <a href="#src-pep">Census population</a></span></figcaption>
+        <div class="chart"><canvas id="c-proj"></canvas></div></figure>
+      <figure class="card"><figcaption><b>Where construction is active right now</b><span>Open construction-stormwater permits by watershed</span><span class="src-link">Source: <a href="#src-echo">EPA ECHO / ADEM</a> · <a href="#src-wbd">USGS watersheds</a></span></figcaption>
+        <div class="chart"><canvas id="c-active"></canvas></div></figure>
+    </div>
+    <figure class="card"><figcaption><b>Cities at their current pace</b><span>Population 2025 and 2030 if the 2020–25 annual growth rate holds</span><span class="src-link">Source: <a href="#src-pep">Census population</a></span></figcaption>
+      <div class="table-wrap"><table id="t-proj"></table></div></figure>
+  </section>
+
+  <section id="sources" class="card sources">
+    <h2>Sources &amp; attribution</h2>
+    <div class="howto">
+      <h3>How to attribute</h3>
+      <ul>
+        <li><b>Credit the agency that produced the data</b>, not this dashboard. Each source below has a suggested credit line and links to the original files.</li>
+        <li><b>Numbers this dashboard calculated</b> (growth percentages, net migration totals, per-100 km² rates, 2030 projections, operator totals, estimated start years and the story leads) should be credited as <i>“[Outlet] analysis of [agency] data.”</i></li>
+        <li><b>Data downloaded Oct 29, 2026.</b> Agencies revise their figures, so check the live source before publishing a specific number.</li>
+        <li>Baldwin County's code in Census and IRS files is <b>state 01, county 003</b> (FIPS 01003). Use it to find the county's rows in the raw files.</li>
+      </ul>
+    </div>
+    <div class="src-grid">
+      <article class="src" id="src-bps">
+        <h3>Housing permits</h3>
+        <p class="credit">Credit: <q>U.S. Census Bureau, Building Permits Survey</q></p>
+        <p><b>Used in:</b> “Housing units permitted” total; New housing units permitted chart; Housing units permitted by city table; 2026 year-to-date story lead.</p>
+        <ul>
+          <li><a href="https://www.census.gov/construction/bps/" target="_blank" rel="noopener">About the survey and documentation ↗</a></li>
+          <li><a href="https://www2.census.gov/econ/bps/County/" target="_blank" rel="noopener">County files ↗</a>: annual <code>co2015a.txt</code>–<code>co2025a.txt</code>; year-to-date <code>co2609y.txt</code> (Jan–Sep 2026) and <code>co2509y.txt</code> (Jan–Sep 2025)</li>
+          <li><a href="https://www2.census.gov/econ/bps/Place/South%20Region/" target="_blank" rel="noopener">City (place) files, South region ↗</a>: <code>so2015a.txt</code>–<code>so2025a.txt</code>. “Unincorporated” is the “Balance of Baldwin County” row (place code 99990).</li>
+        </ul>
+        <p class="note">Counts housing units <i>authorized</i> by permit, not units built. Permits in unincorporated areas are issued by Baldwin County.</p>
+      </article>
+      <article class="src" id="src-pep">
+        <h3>Population</h3>
+        <p class="credit">Credit: <q>U.S. Census Bureau, Population Estimates Program</q></p>
+        <p><b>Used in:</b> “Population, 2025” total; population columns in the city table; County population chart; Cities at their current pace table; fastest-growing city story lead.</p>
+        <ul>
+          <li><a href="https://www.census.gov/data/tables/time-series/demo/popest/2020s-total-cities-and-towns.html" target="_blank" rel="noopener">City and town estimates, 2020–2025 ↗</a>: raw file <a href="https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv" target="_blank" rel="noopener"><code>sub-est2025.csv</code></a></li>
+          <li><a href="https://www.census.gov/programs-surveys/popest/technical-documentation/research/evaluation-estimates/2020-evaluation-estimates/2010s-cities-and-towns-total.html" target="_blank" rel="noopener">City and town estimates, 2010–2020 ↗</a>: raw file <a href="https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/cities/SUB-EST2020_ALL.csv" target="_blank" rel="noopener"><code>SUB-EST2020_ALL.csv</code></a></li>
+        </ul>
+        <p class="note">2015–2019 come from the 2020 vintage and 2020–2025 from the 2025 vintage. Some towns jump in 2020 because estimates were reset to the 2020 Census. The 2030 figures are this dashboard's projection (the 2020–25 annual growth rate continued) and are not a Census forecast.</p>
+      </article>
+      <article class="src" id="src-irs-mig">
+        <h3>Who's moving in (migration)</h3>
+        <p class="credit">Credit: <q>Internal Revenue Service, Statistics of Income, county-to-county migration data</q></p>
+        <p><b>Used in:</b> “Net new residents” total; Moving in vs. moving out chart; Newcomer vs. resident income chart; Top places new residents came from; Movers by origin state; income and out-of-state story lead.</p>
+        <ul>
+          <li><a href="https://www.irs.gov/statistics/soi-tax-stats-migration-data" target="_blank" rel="noopener">IRS migration data and user guides ↗</a></li>
+          <li>Raw files for each filing-year pair, from <a href="https://www.irs.gov/pub/irs-soi/countyinflow1415.csv" target="_blank" rel="noopener"><code>countyinflow1415.csv</code></a> to <a href="https://www.irs.gov/pub/irs-soi/countyinflow2223.csv" target="_blank" rel="noopener"><code>countyinflow2223.csv</code></a>. Outflows: <a href="https://www.irs.gov/pub/irs-soi/countyoutflow2223.csv" target="_blank" rel="noopener"><code>countyoutflow2223.csv</code></a> (same pattern).</li>
+        </ul>
+        <p class="note">“People” is the number of individuals on tax returns (IRS column <code>n2</code>). “Households” is the number of returns (<code>n1</code>). Income is adjusted gross income divided by returns, in nominal dollars. The IRS hides flows under 20 households, so origin totals undercount.</p>
+      </article>
+      <article class="src" id="src-irs-zip">
+        <h3>ZIP code population</h3>
+        <p class="credit">Credit: <q>Internal Revenue Service, Statistics of Income, individual income tax ZIP code data</q></p>
+        <p><b>Used in:</b> Population growth by ZIP code chart; ZIP shading on the map; ZIP story lead.</p>
+        <ul>
+          <li><a href="https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-zip-code-data-soi" target="_blank" rel="noopener">IRS ZIP code data and documentation ↗</a></li>
+          <li>Raw files for tax years 2014–2023, from <a href="https://www.irs.gov/pub/irs-soi/14zpallnoagi.csv" target="_blank" rel="noopener"><code>14zpallnoagi.csv</code></a> to <a href="https://www.irs.gov/pub/irs-soi/23zpallnoagi.csv" target="_blank" rel="noopener"><code>23zpallnoagi.csv</code></a>. The figure used is column <code>N2</code> (individuals).</li>
+        </ul>
+        <p class="note">This counts people on tax returns, not a census count. Small and PO-box ZIPs are suppressed.</p>
+      </article>
+      <article class="src" id="src-echo">
+        <h3>Construction sites, citations &amp; fines</h3>
+        <p class="credit">Credit: <q>Alabama Department of Environmental Management (ADEM) records, via the U.S. EPA Enforcement and Compliance History Online (ECHO) database</q></p>
+        <p><b>Used in:</b> “Construction sites” and “Sites cited” totals; map dots; New construction-stormwater sites per year chart; site and citation counts in the Watershed scorecard; Where construction is active chart; both Accountability tables; biggest-fine story lead.</p>
+        <ul>
+          <li><b>Every site in the tables and map links to its own EPA Detailed Facility Report</b>, the citable record for that site's permit, inspections, violations and penalties.</li>
+          <li><a href="https://echo.epa.gov/facilities/facility-search" target="_blank" rel="noopener">ECHO facility search ↗</a>: choose Clean Water Act, state Alabama, county Baldwin to rebuild the full list.</li>
+          <li><a href="https://echo.epa.gov/tools/data-downloads" target="_blank" rel="noopener">ECHO bulk data downloads (ICIS-NPDES) ↗</a></li>
+          <li><a href="https://app.adem.alabama.gov/eFile/" target="_blank" rel="noopener">ADEM eFile ↗</a>: the state's own copies of permits, notices of violation and consent orders. Search by permit number (for example <code>ALR10…</code>), which is the ID shown on each EPA report.</li>
+        </ul>
+        <p class="note">Enforcement and penalties cover roughly the last five years. ADEM re-issues the construction general permit (Apr 2016, Apr 2021, 2026), which resets coverage dates. For those sites, start years marked “est.” are this dashboard's estimate from the sequential permit number. ECHO has noticeably fewer sites starting in 2015–2016, likely a records gap. Residential/commercial type comes from the operator's NAICS industry code and is sometimes missing. Operator names were lightly cleaned up (for example, “LLC” and “Inc.” variants merged). Confirm the exact legal name on the EPA or ADEM record before you name a company.</p>
+      </article>
+      <article class="src" id="src-attains">
+        <h3>Impaired waters</h3>
+        <p class="credit">Credit: <q>U.S. EPA ATTAINS, Alabama 2024 water quality assessment</q> (the assessments are made by ADEM)</p>
+        <p><b>Used in:</b> “Impaired water segments” total; red lines on the map; Why the waters are listed as impaired chart; impaired-water columns in the Watershed scorecard.</p>
+        <ul>
+          <li><a href="https://www.epa.gov/waterdata/attains" target="_blank" rel="noopener">About ATTAINS ↗</a></li>
+          <li><a href="https://mywaterway.epa.gov/" target="_blank" rel="noopener">How's My Waterway ↗</a>: plain-language pages for each water body. Click a red line on the map for its EPA water report.</li>
+          <li><a href="https://gispub.epa.gov/arcgis/rest/services/OW/ATTAINS_Assessment/MapServer" target="_blank" rel="noopener">ATTAINS map service (raw geometry and attributes) ↗</a></li>
+        </ul>
+        <p class="note">Mercury listings are mostly tied to fallout from the air, not local construction. Pathogens, sediment, turbidity and nutrients are the causes most linked to runoff.</p>
+      </article>
+      <article class="src" id="src-wbd">
+        <h3>Watersheds</h3>
+        <p class="credit">Credit: <q>U.S. Geological Survey, Watershed Boundary Dataset</q></p>
+        <p><b>Used in:</b> watershed shading on the map; Watershed scorecard; bay-system totals. Sites, citations and impaired waters are assigned to watersheds by this dashboard using their locations.</p>
+        <ul>
+          <li><a href="https://www.usgs.gov/national-hydrography/watershed-boundary-dataset" target="_blank" rel="noopener">About the Watershed Boundary Dataset ↗</a></li>
+          <li><a href="https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/6" target="_blank" rel="noopener">HUC-12 map service (raw) ↗</a></li>
+        </ul>
+      </article>
+      <article class="src" id="src-geo">
+        <h3>Map boundaries &amp; basemap</h3>
+        <p class="credit">Credit: <q>U.S. Census Bureau TIGER boundaries; basemap © Esri</q></p>
+        <p><b>Used in:</b> county, city and ZIP (ZCTA) outlines on the map.</p>
+        <ul>
+          <li><a href="https://tigerweb.geo.census.gov/" target="_blank" rel="noopener">Census TIGERweb ↗</a></li>
+        </ul>
+      </article>
+      <article class="src" id="src-missing">
+        <h3>Not yet included</h3>
+        <p>County and city commercial building permits, subdivision plat approvals, rezonings, the text of ADEM consent orders and county stop-work orders. These need records requests or scraping.</p>
+      </article>
+    </div>
+    <p class="muted">Data downloaded Oct 29, 2026. Rebuild with <code>etl/fetch.sh</code> → <code>etl/fetch_geo.py</code> → <code>etl/process.py</code>.</p>
+  </section>
+</main>
+<div id="tip" role="tooltip"></div>
+<script src="lib/chart.umd.min.js"></script>
+<script src="lib/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
